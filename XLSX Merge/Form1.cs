@@ -76,9 +76,9 @@ namespace XLSX_Merge
             try
             {
                 IXLRange range = worksheet.Range(txtbxCellRange.Text);  // Select a range of cells based on the user given range
-                foreach (var cell in range.Cells())                     // Extract each cells value and display it in the textbox
+                foreach (var cell in range.Cells())                       // Extract each cells value and display it in the textbox
                     txtbxXlsx.Text = txtbxXlsx.Text 
-                                    + cell.GetValue<string>() 
+                                    + cell.GetString() 
                                     + "\r\n";
 
             } catch (Exception ex)

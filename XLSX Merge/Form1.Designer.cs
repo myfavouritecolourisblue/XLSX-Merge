@@ -173,6 +173,7 @@
             this.txtbxCellRange.PlaceholderText = "A1:E7";
             this.txtbxCellRange.Size = new System.Drawing.Size(100, 23);
             this.txtbxCellRange.TabIndex = 13;
+            this.txtbxCellRange.Text = "A1:E7";
             // 
             // panel1
             // 

@@ -164,48 +164,33 @@ namespace XLSX_Merge
             // Create new Excel sheet
             IXLWorksheet newSheet = newFile.AddWorksheet("Tabelle123");
 
-
-            using (TextFieldParser parser = new TextFieldParser(filepath))
-            {
-                // Tell parser that the text is delimited with a semicolon
-                parser.TextFieldType = FieldType.Delimited;
-                parser.SetDelimiters(";");
-
-                // Rows a counted from 1 instead of 0, that means:
-                // row == arrayindex + 1
-                int lineNumber = 1;
-
-                while (!parser.EndOfData)
-                {
-                    // Read the next line of the csv file
-                    string? line = parser.ReadLine();
-                    if(line == null) { break; }
-                    else
-                    {
-                        // Split current line by its delimiter
-                        string[] splittedValues = line.Split(";");
-                        // The number of substrings equals the number of columns
-                        int numberOfColumns = splittedValues.Length;
-
-                        // Go through each column in the current row (line) and set the cells value
-                        for (int i = 0; i < numberOfColumns; i++)
-                        {
-                            int row = lineNumber;
-                            int column = i + 1;
-
-                            newSheet.Cell(row, column).SetValue(splittedValues[i]);
-                        }
-                    }
-                    lineNumber++;
-                }
-            }
+            csvToWorksheet(filepath, newSheet);
 
             newFile.SaveAs("C:\\temp\\neu_" + DateTime.Now.Ticks + ".xlsx");
         }
 
+        
+
         private void btnMergeFiles_Click(object sender, EventArgs e)
         {
-            // read csv to temporary worksheet
+            // read csv into temporary worksheet
+            string filepath = "C:\\temp\\quelle.csv";
+            txtbxCsvFile.Text = filepath;
+            // Create temporary Excel workbook
+            XLWorkbook tempCsvWb = new XLWorkbook();
+            // Create temporary Excel sheet
+            IXLWorksheet tempCsvWs = tempCsvWb.AddWorksheet("csv-import");
+
+            // Import CSV data into worksheet
+            csvToWorksheet(filepath, tempCsvWs);
+
+            string indexHeader = txtbxMergeHeader.Text;
+            if (String.IsNullOrEmpty(indexHeader))
+            {
+                MessageBox.Show("No index header given.");
+                return;
+            }
+
             // sort csv data into column ranges by header and sorted by index
             // open xlsx file, open workbook, open worksheet (maybe as a stream instead of a file)
             // check where the header row is by
@@ -230,6 +215,48 @@ namespace XLSX_Merge
         private void lblMergeDataHeader_Click(object sender, EventArgs e)
         {
 
+        }
+
+        ///////////////////////////////////////////////////////////////////////
+        /// NOCH AUSLAGERN IN ANDERE DATEI ///
+        ///////////////////////////////////////////////////////////////////////
+
+        private static void csvToWorksheet(string filepath, IXLWorksheet newSheet)
+        {
+            using (TextFieldParser parser = new(filepath))
+            {
+                // Tell parser that the text is delimited with a semicolon
+                parser.TextFieldType = FieldType.Delimited;
+                parser.SetDelimiters(";");
+
+                // Rows a counted from 1 instead of 0, that means:
+                // row == arrayindex + 1
+                int lineNumber = 1;
+
+                while (!parser.EndOfData)
+                {
+                    // Read the next line of the csv file
+                    string? line = parser.ReadLine();
+                    if (line == null) { break; }
+                    else
+                    {
+                        // Split current line by its delimiter
+                        string[] splittedValues = line.Split(";");
+                        // The number of substrings equals the number of columns
+                        int numberOfColumns = splittedValues.Length;
+
+                        // Go through each column in the current row (line) and set the cells value
+                        for (int i = 0; i < numberOfColumns; i++)
+                        {
+                            int row = lineNumber;
+                            int column = i + 1;
+
+                            newSheet.Cell(row, column).SetValue(splittedValues[i]);
+                        }
+                    }
+                    lineNumber++;
+                }
+            }
         }
     }
 }

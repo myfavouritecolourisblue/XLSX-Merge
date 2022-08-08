@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            System.Windows.Forms.Label lblMergeDataHeader;
             this.btnReadXlsx = new System.Windows.Forms.Button();
             this.lblXlsxFileView = new System.Windows.Forms.Label();
             this.txtbxXlsx = new System.Windows.Forms.TextBox();
@@ -58,8 +59,22 @@
             this.lblCsvFileView = new System.Windows.Forms.Label();
             this.btnMergeFiles = new System.Windows.Forms.Button();
             this.btnConvCsvXlsx = new System.Windows.Forms.Button();
+            this.txtbxMergeHeader = new System.Windows.Forms.TextBox();
+            this.lblMergeMethod = new System.Windows.Forms.Label();
+            this.cbMergeMethod = new System.Windows.Forms.ComboBox();
+            lblMergeDataHeader = new System.Windows.Forms.Label();
             this.panel1.SuspendLayout();
             this.SuspendLayout();
+            // 
+            // lblMergeDataHeader
+            // 
+            lblMergeDataHeader.AutoSize = true;
+            lblMergeDataHeader.Location = new System.Drawing.Point(12, 369);
+            lblMergeDataHeader.Name = "lblMergeDataHeader";
+            lblMergeDataHeader.Size = new System.Drawing.Size(165, 15);
+            lblMergeDataHeader.TabIndex = 24;
+            lblMergeDataHeader.Text = "Merge data by header (index):";
+            lblMergeDataHeader.Click += new System.EventHandler(this.lblMergeDataHeader_Click);
             // 
             // btnReadXlsx
             // 
@@ -318,7 +333,7 @@
             // 
             // btnMergeFiles
             // 
-            this.btnMergeFiles.Location = new System.Drawing.Point(12, 318);
+            this.btnMergeFiles.Location = new System.Drawing.Point(106, 337);
             this.btnMergeFiles.Name = "btnMergeFiles";
             this.btnMergeFiles.Size = new System.Drawing.Size(75, 23);
             this.btnMergeFiles.TabIndex = 22;
@@ -328,7 +343,7 @@
             // 
             // btnConvCsvXlsx
             // 
-            this.btnConvCsvXlsx.Location = new System.Drawing.Point(127, 318);
+            this.btnConvCsvXlsx.Location = new System.Drawing.Point(866, 237);
             this.btnConvCsvXlsx.Name = "btnConvCsvXlsx";
             this.btnConvCsvXlsx.Size = new System.Drawing.Size(163, 23);
             this.btnConvCsvXlsx.TabIndex = 23;
@@ -336,11 +351,44 @@
             this.btnConvCsvXlsx.UseVisualStyleBackColor = true;
             this.btnConvCsvXlsx.Click += new System.EventHandler(this.btnConvCsvXlsx_Click);
             // 
+            // txtbxMergeHeader
+            // 
+            this.txtbxMergeHeader.Location = new System.Drawing.Point(184, 366);
+            this.txtbxMergeHeader.Name = "txtbxMergeHeader";
+            this.txtbxMergeHeader.PlaceholderText = "Surname";
+            this.txtbxMergeHeader.Size = new System.Drawing.Size(100, 23);
+            this.txtbxMergeHeader.TabIndex = 26;
+            // 
+            // lblMergeMethod
+            // 
+            this.lblMergeMethod.AutoSize = true;
+            this.lblMergeMethod.Location = new System.Drawing.Point(89, 398);
+            this.lblMergeMethod.Name = "lblMergeMethod";
+            this.lblMergeMethod.Size = new System.Drawing.Size(89, 15);
+            this.lblMergeMethod.TabIndex = 27;
+            this.lblMergeMethod.Text = "Merge method:";
+            // 
+            // cbMergeMethod
+            // 
+            this.cbMergeMethod.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cbMergeMethod.FormattingEnabled = true;
+            this.cbMergeMethod.Items.AddRange(new object[] {
+            "Append",
+            "Replace"});
+            this.cbMergeMethod.Location = new System.Drawing.Point(184, 395);
+            this.cbMergeMethod.Name = "cbMergeMethod";
+            this.cbMergeMethod.Size = new System.Drawing.Size(121, 23);
+            this.cbMergeMethod.TabIndex = 28;
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1094, 711);
+            this.Controls.Add(this.cbMergeMethod);
+            this.Controls.Add(this.lblMergeMethod);
+            this.Controls.Add(this.txtbxMergeHeader);
+            this.Controls.Add(lblMergeDataHeader);
             this.Controls.Add(this.btnConvCsvXlsx);
             this.Controls.Add(this.btnMergeFiles);
             this.Controls.Add(this.lblCsvFileView);
@@ -406,5 +454,9 @@
         private Label lblCsvFileView;
         private Button btnMergeFiles;
         private Button btnConvCsvXlsx;
+        private Label lblMergeDataHeader;
+        private TextBox txtbxMergeHeader;
+        private Label lblMergeMethod;
+        private ComboBox cbMergeMethod;
     }
 }

@@ -164,6 +164,7 @@ namespace XLSX_Merge
             // Create new Excel sheet
             IXLWorksheet newSheet = newFile.AddWorksheet("Tabelle123");
 
+
             using (TextFieldParser parser = new TextFieldParser(filepath))
             {
                 // Tell parser that the text is delimited with a semicolon
@@ -203,6 +204,30 @@ namespace XLSX_Merge
         }
 
         private void btnMergeFiles_Click(object sender, EventArgs e)
+        {
+            // read csv to temporary worksheet
+            // sort csv data into column ranges by header and sorted by index
+            // open xlsx file, open workbook, open worksheet (maybe as a stream instead of a file)
+            // check where the header row is by
+            //      sort csv file's header alphabetically
+            //      get csv file's header count
+            //      repeat until true:
+            //          get a xlsx file row
+            //          check if it contains all the headers by Range.Intersects(...)
+            // get X & Y coordinates of each header
+            // check for merging method
+            // if (mergeMethod==append)
+            //      check for next empty cell in column of the index header column (the Y-coordinate)
+            //      insert each presorted column (from Step 2) vertically from the Y-coordinate of the last step and the X-coordinate of the headers column
+            // Save workbook
+        }
+
+        private void label2_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void lblMergeDataHeader_Click(object sender, EventArgs e)
         {
 
         }

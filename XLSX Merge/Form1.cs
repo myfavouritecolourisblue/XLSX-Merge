@@ -5,11 +5,14 @@ namespace XLSX_Merge
 {
     public partial class Form1 : Form
     {
+        #region JaHierSindDefinitionen
         // The actual Excel file
         XLWorkbook workbook;
 
         // The current Excel sheet
         IXLWorksheet worksheet;
+
+        #endregion
 
         public Form1()
         {
@@ -191,8 +194,23 @@ namespace XLSX_Merge
                 return;
             }
 
-            // sort csv data into column ranges by header and sorted by index
+            // sort data by the index
+            tempCsvWs.Sort(indexHeader);
+            var x = tempCsvWs.SortRows;
+
+            // get the mapping of header-name-string to header-position-int
+            Dictionary<string, int> headerPositionPairs = new Dictionary<string, int>();
+            IXLRow firstRow = tempCsvWs.FirstRow();
+
+            foreach (var c in firstRow.CellsUsed())
+                headerPositionPairs.Add(c.GetString(), c.Address.ColumnNumber);
+
             // open xlsx file, open workbook, open worksheet (maybe as a stream instead of a file)
+            // TODO: open as a stream
+            string filepathDest = "C:\\temp\\quelle.xlsx");
+            IXLWorkbook destinationWb = new XLWorkbook(filepathDest);
+            IXLWorksheet destinationWs = destinationWb.Worksheet(0);
+
             // check where the header row is by
             //      sort csv file's header alphabetically
             //      get csv file's header count
@@ -217,6 +235,7 @@ namespace XLSX_Merge
 
         }
 
+        #region Utility Funktionen und noch auszulagernde Funktionen
         ///////////////////////////////////////////////////////////////////////
         /// NOCH AUSLAGERN IN ANDERE DATEI ///
         ///////////////////////////////////////////////////////////////////////
@@ -258,5 +277,6 @@ namespace XLSX_Merge
                 }
             }
         }
+        #endregion
     }
 }

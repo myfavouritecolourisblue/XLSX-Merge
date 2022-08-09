@@ -173,26 +173,34 @@ namespace XLSX_Merge
         }
 
         
-
-        private void btnMergeFiles_Click(object sender, EventArgs e)
-        {
+        // TODO: Tests, Fehlermeldungen, Dokumentation, commandline arguments, open file dialog
+        private void btnMergeFiles_Click(object sender, EventArgs e) {
+            #region CSV file import
             // read csv into temporary worksheet
             string filepath = "C:\\temp\\quelle.csv";
-            txtbxCsvFile.Text = filepath;
+            if (!File.Exists(filepath)) {
+                MessageBox.Show("Error: CSV file doesn't exist. Aborting operation.");
+                return;
+            }
+            
             // Create temporary Excel workbook
             XLWorkbook tempCsvWb = new XLWorkbook();
             // Create temporary Excel sheet
             IXLWorksheet tempCsvWs = tempCsvWb.AddWorksheet("csv-import");
 
             // Import CSV data into worksheet
-            csvToWorksheet(filepath, tempCsvWs);
-
-            string indexHeader = txtbxMergeHeader.Text;
-            if (String.IsNullOrEmpty(indexHeader))
-            {
-                MessageBox.Show("No index header given.");
+            try {
+                csvToWorksheet(filepath, tempCsvWs);
+            } catch (Exception ex) {
+                MessageBox.Show("An error occured while importing the csv file. Error message:\r\n\r\n" + ex.Message);
                 return;
             }
+            
+            if (String.IsNullOrEmpty(txtbxMergeHeader.Text)) {
+                MessageBox.Show("No index header given. Aborting operation.");
+                return;
+            }
+            string indexHeader = txtbxMergeHeader.Text;
 
             // sort data by the index
             tempCsvWs.Sort(indexHeader);
@@ -203,10 +211,16 @@ namespace XLSX_Merge
 
             foreach (var c in firstRow.CellsUsed())
                 csvHeaderXPositionKvp.Add(c.GetString(), c.Address.ColumnNumber);
+            #endregion
+
 
             // open xlsx file, open workbook, open worksheet (maybe as a stream instead of a file)
             // TODO: open as a stream
             string filepathDest = "C:\\temp\\quelle.xlsx";
+            if (!File.Exists(filepathDest)) {
+                MessageBox.Show("Error: Excel file does not exist. Aborting operation.");
+                return;
+            }
             IXLWorkbook destinationWb = new XLWorkbook(filepathDest);
             IXLWorksheet destinationWs = destinationWb.Worksheet(0);
 
@@ -233,16 +247,17 @@ namespace XLSX_Merge
             }
 
             // Abort if no fitting row was found
-            if (destHeaderRowNr is null)
+            if (destHeaderRowNr is null) {
+                MessageBox.Show("Error: Corresponding column headers of the CSV file not found in Excel file. Aborting operation.");
                 return;
+            }
 
             //  X-coordinates of each header
-            Dictionary<string,int> xlsxHeaderXPositionKvp = new Dictionary<string,int>();
+            Dictionary<string,int> xlsxHeaderXPositionKvp = new();
             // For each header in our CSVs header dictionary ...
-            foreach(string s in csvHeaderXPositionKvp.Keys)
-            {
+            foreach(string s in csvHeaderXPositionKvp.Keys) {
                 IXLCells c = destinationWs.Row((int)destHeaderRowNr).Search(s); // ... search the row for cells containing the header
-                xlsxHeaderXPositionKvp.Add(s, c.First().Address.ColumnNumber);   // ... and add the first found cell's column number as value to the collection
+                xlsxHeaderXPositionKvp.Add(s, c.First().Address.ColumnNumber);   // ... and add the first found cell's column number (X-coordinate) as value to the dict
             }
 
             // Check for merging method

@@ -299,8 +299,9 @@ namespace XLSX_Merge
             } else { 
                 return; // Abort execution
             }
-            
+
             // Save workbook
+            destinationWb.Save();
         }
 
 

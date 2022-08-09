@@ -174,6 +174,18 @@ namespace XLSX_Merge
 
         
         // TODO: Tests, Fehlermeldungen, Dokumentation, commandline arguments, open file dialog
+        /// <summary>
+        /// Merges a .csv file into a .xlsx file.
+        /// It uses the headers (first row values) of the .csv file as an orientation,
+        /// looks for these headers in the .xlsx file and either
+        /// 1) appends the .csv file's values just after the last value below the 
+        /// corresponding header,
+        /// OR
+        /// 2) clears all values below the headers and inserts the .csv's data below
+        ///     the corresponding header.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void btnMergeFiles_Click(object sender, EventArgs e) {
             #region CSV file import
             // read csv into temporary worksheet

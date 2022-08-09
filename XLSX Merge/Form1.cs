@@ -199,25 +199,53 @@ namespace XLSX_Merge
             var x = tempCsvWs.SortRows;
 
             // get the mapping of header-name-string to header-position-int
-            Dictionary<string, int> headerPositionPairs = new Dictionary<string, int>();
+            Dictionary<string, int> csvHeaderPositionKvp = new Dictionary<string, int>();
             IXLRow firstRow = tempCsvWs.FirstRow();
 
             foreach (var c in firstRow.CellsUsed())
-                headerPositionPairs.Add(c.GetString(), c.Address.ColumnNumber);
+                csvHeaderPositionKvp.Add(c.GetString(), c.Address.ColumnNumber);
 
             // open xlsx file, open workbook, open worksheet (maybe as a stream instead of a file)
             // TODO: open as a stream
-            string filepathDest = "C:\\temp\\quelle.xlsx");
+            string filepathDest = "C:\\temp\\quelle.xlsx";
             IXLWorkbook destinationWb = new XLWorkbook(filepathDest);
             IXLWorksheet destinationWs = destinationWb.Worksheet(0);
 
-            // check where the header row is by
-            //      sort csv file's header alphabetically
-            //      get csv file's header count
-            //      repeat until true:
-            //          get a xlsx file row
-            //          check if it contains all the headers by Range.Intersects(...)
-            // get X & Y coordinates of each header
+            // this will be our X-coordinate, the row number in which the headers are contained in the existing Excel file
+            int? destHeaderRowNr = null;
+            // repeat:
+            foreach (IXLRow r in destinationWs.RowsUsed())
+            {
+                // get a xlsx file row and check if it contains all the headers
+                bool headerFoundInRow = r.Contains(firstRow);
+                if (!headerFoundInRow)
+                    continue;
+
+                destHeaderRowNr = r.RowNumber();
+
+                #region DEBUG
+                foreach (IXLCell c in r.CellsUsed())
+                    txtbxXlsx.Text = txtbxXlsx.Text + "\r\n" + c.GetString();
+                foreach (KeyValuePair<string,int> kvp in csvHeaderPositionKvp)
+                    txtbxXlsx.Text = txtbxXlsx.Text + "\r\n" + kvp.Key;
+                #endregion
+
+                break;
+            }
+
+            // Abort if no fitting row was found
+            if (destHeaderRowNr is null)
+                return;
+
+            //  Y-coordinates of each header
+            Dictionary<string,int> xlsxHeaderPositionKvp = new Dictionary<string,int>();
+            // For each header in our CSVs header dictionary ...
+            foreach(string s in csvHeaderPositionKvp.Keys)
+            {
+                IXLCells c = destinationWs.Row((int)destHeaderRowNr).Search(s); // ... search the row for cells containing the header
+                xlsxHeaderPositionKvp.Add(s, c.First().Address.ColumnNumber);   // ... and add the first found cell's column number as value to the collection
+            }
+
             // check for merging method
             // if (mergeMethod==append)
             //      check for next empty cell in column of the index header column (the Y-coordinate)

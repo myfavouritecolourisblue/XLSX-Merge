@@ -196,7 +196,6 @@ namespace XLSX_Merge
 
             // sort data by the index
             tempCsvWs.Sort(indexHeader);
-            var x = tempCsvWs.SortRows;
 
             // get the mapping of header-name-string to header-position-int
             Dictionary<string, int> csvHeaderPositionKvp = new Dictionary<string, int>();
@@ -211,7 +210,7 @@ namespace XLSX_Merge
             IXLWorkbook destinationWb = new XLWorkbook(filepathDest);
             IXLWorksheet destinationWs = destinationWb.Worksheet(0);
 
-            // this will be our X-coordinate, the row number in which the headers are contained in the existing Excel file
+            // this will be our Y-coordinate, the row number in which the headers are contained in the existing Excel file
             int? destHeaderRowNr = null;
             // repeat:
             foreach (IXLRow r in destinationWs.RowsUsed())
@@ -237,7 +236,7 @@ namespace XLSX_Merge
             if (destHeaderRowNr is null)
                 return;
 
-            //  Y-coordinates of each header
+            //  X-coordinates of each header
             Dictionary<string,int> xlsxHeaderPositionKvp = new Dictionary<string,int>();
             // For each header in our CSVs header dictionary ...
             foreach(string s in csvHeaderPositionKvp.Keys)
@@ -246,13 +245,39 @@ namespace XLSX_Merge
                 xlsxHeaderPositionKvp.Add(s, c.First().Address.ColumnNumber);   // ... and add the first found cell's column number as value to the collection
             }
 
-            // check for merging method
-            // if (mergeMethod==append)
-            //      check for next empty cell in column of the index header column (the Y-coordinate)
-            //      insert each presorted column (from Step 2) vertically from the Y-coordinate of the last step and the X-coordinate of the headers column
+            // Check for merging method
+            switch (cbMergeMethod.Text)
+            {
+                case "Append":
+                    // Check for next empty cell in the index header column (the Y-coordinate) and increase it by 1 to get the next free cell
+                    int startrowOfRangeInsert = destinationWs.Column(xlsxHeaderPositionKvp[indexHeader]).LastCellUsed().Address.RowNumber + 1;
+                    
+                    // Get the number of entries in the csv
+                    int rangeLength = tempCsvWs.Column(indexHeader).LastCellUsed().Address.RowNumber;
+                    
+                    // Insert each presorted column (from Step 2) vertically first free row and the X-coordinate of the headers column
+                    foreach (KeyValuePair<string,int> csvKvp in csvHeaderPositionKvp)
+                    {
+                        IXLCell startCell = destinationWs.Cell(startrowOfRangeInsert, xlsxHeaderPositionKvp[csvKvp.Key]);
+
+                        // Construct the vertical range that holds the csv data
+                        IXLRange dataRange = tempCsvWs.Range(1, csvKvp.Value, rangeLength + 1, csvKvp.Value);
+
+                        // Insert the values
+                        startCell.Value = dataRange;
+                    }
+                    break;
+                case "Replace":
+                    break;
+                default:
+                    break;
+            }
+            
             // Save workbook
         }
 
+
+        #region Funktionen die ich nicht löschen kann
         private void label2_Click(object sender, EventArgs e)
         {
 
@@ -262,6 +287,7 @@ namespace XLSX_Merge
         {
 
         }
+        #endregion
 
         #region Utility Funktionen und noch auszulagernde Funktionen
         ///////////////////////////////////////////////////////////////////////

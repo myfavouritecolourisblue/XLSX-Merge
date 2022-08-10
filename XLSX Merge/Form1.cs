@@ -270,7 +270,7 @@ namespace XLSX_Merge
 
             // Abort if no fitting row was found
             if (destHeaderRowNr is null) {
-                MessageBox.Show("Error: Corresponding column headers of the CSV file not found in Excel file. Aborting operation.");
+                MessageBox.Show("Error: Corresponding column headers of the CSV file not found in Excel file or the column headers are placed in different rows. Aborting operation.");
                 return;
             }
 
@@ -291,8 +291,12 @@ namespace XLSX_Merge
                 // Check for next empty cell in the index header column (the Y-coordinate) and increase it by 1 to get the next free cell
                 int startrowOfRangeInsert = destinationWs.Column(xlsxHeaderXPositionKvp[indexHeader]).LastCellUsed().Address.RowNumber + 1;
 
-                // Get the number of entries in the csv header column
-                int rangeLength = tempCsvWs.Column(indexHeaderNr).CellsUsed().Count() - 1;
+                /* Get the number of entries in the csv header column by
+                 * subtracting 1 off of the last used cell's row number. In
+                 * case of an empty cell in the indexheader column in between
+                 * the function counts adds the row to the range length as long
+                 * as somewhere further down is a cell with a value. */
+                int rangeLength = tempCsvWs.Column(indexHeaderNr).LastCellUsed().Address.RowNumber - 1;
 
                 // Insert each presorted column (from Step 2) vertically at the first free row and the X-coordinate of the headers column
                 foreach (KeyValuePair<string, int> csvKvp in csvHeaderXPositionKvp)
@@ -325,7 +329,7 @@ namespace XLSX_Merge
                     );
 
                     // If the end cell has a lower row number, it means that there are no entries in this column underneath the header,
-                    // so the start cell is eqal to the end cell.
+                    // so the start cell is equal to the end cell.
                     if (removeRangeEndCell.Address.RowNumber < startCell.Address.RowNumber)
                         removeRangeEndCell = startCell;
 

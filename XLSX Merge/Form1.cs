@@ -208,23 +208,18 @@ namespace XLSX_Merge
                 return;
             }
 
-            // DEBUG: gleich wieder aktivieren
-            //if (String.IsNullOrEmpty(txtbxMergeHeader.Text)) {
-            //    MessageBox.Show("No index header given. Aborting operation.");
-            //    return;
-            //}
-            //string indexHeader = txtbxMergeHeader.Text;
-            string indexHeader = "mID";
-
-            // sort data by the index
-            tempCsvWs.Sort(indexHeader);
-
             // get the mapping of header-name-string to header-position-int
             Dictionary<string, int> csvHeaderXPositionKvp = new Dictionary<string, int>();
             IXLRow firstRow = tempCsvWs.FirstRow();
 
             foreach (var c in firstRow.CellsUsed())
                 csvHeaderXPositionKvp.Add(c.GetString(), c.Address.ColumnNumber);
+
+            string indexHeader = txtbxMergeHeader.Text;
+            int indexHeaderNr = csvHeaderXPositionKvp[indexHeader];
+
+            // sort data by the index
+            //tempCsvWs.Sort(indexHeader);
             #endregion
 
 
@@ -235,7 +230,14 @@ namespace XLSX_Merge
                 MessageBox.Show("Error: Excel file does not exist. Aborting operation.");
                 return;
             }
-            IXLWorkbook destinationWb = new XLWorkbook(filepathDest);
+
+            IXLWorkbook destinationWb;
+            try {
+                destinationWb = new XLWorkbook(filepathDest);
+            } catch (System.IO.IOException ex) {
+                MessageBox.Show("Error: Opening the Excel file failed. Error message:\r\n\r\n" + ex.Message);
+                return;
+            }
             IXLWorksheet destinationWs = destinationWb.Worksheet(1);
 
             // this will be our Y-coordinate, the row number in which the headers are contained in the existing Excel file
@@ -282,23 +284,15 @@ namespace XLSX_Merge
                 xlsxHeaderXPositionKvp.Add(s, c.First().Address.ColumnNumber);   // ... and add the first found cell's column number (X-coordinate) as value to the dict
             }
 
-            // DEBUG: bitte entfernen
-            #region DEBUG
-            cbMergeMethod.Text = "Append";
-            #endregion
+            
             // Check for merging method
             if (cbMergeMethod.Text.Equals("Append"))
             {
                 // Check for next empty cell in the index header column (the Y-coordinate) and increase it by 1 to get the next free cell
                 int startrowOfRangeInsert = destinationWs.Column(xlsxHeaderXPositionKvp[indexHeader]).LastCellUsed().Address.RowNumber + 1;
 
-                // Get the number of entries in the csv
-                IXLColumn   a = tempCsvWs.Column(indexHeader);
-                a.AsRange();
-
-                return;
-                //int rangeLength = d;
-                //int rangeLength = tempCsvWs.Column(indexHeader).LastCellUsed().Address.RowNumber;
+                // Get the number of entries in the csv header column
+                int rangeLength = tempCsvWs.Column(indexHeaderNr).CellsUsed().Count() - 1;
 
                 // Insert each presorted column (from Step 2) vertically at the first free row and the X-coordinate of the headers column
                 foreach (KeyValuePair<string, int> csvKvp in csvHeaderXPositionKvp)
@@ -306,7 +300,7 @@ namespace XLSX_Merge
                     IXLCell startCell = destinationWs.Cell(startrowOfRangeInsert, xlsxHeaderXPositionKvp[csvKvp.Key]);
 
                     // Construct the vertical range that holds the csv data
-                    IXLRange dataRange = tempCsvWs.Range(1, csvKvp.Value, rangeLength + 1, csvKvp.Value);
+                    IXLRange dataRange = tempCsvWs.Range(2, csvKvp.Value, rangeLength + 1, csvKvp.Value);
 
                     // Insert the values
                     startCell.Value = dataRange;
@@ -316,7 +310,7 @@ namespace XLSX_Merge
                 int startrowOfRangeInsert = (int)destHeaderRowNr + 1;
 
                 // Get the number of entries in the csv
-                int rangeLength = tempCsvWs.Column(indexHeader).LastCellUsed().Address.RowNumber;
+                int rangeLength = tempCsvWs.Column(indexHeaderNr).CellsUsed().Count() - 1;
 
                 // Insert each presorted column (from Step 2) vertically in the row below the header and the X-coordinate of the headers column
                 // and delete all other entries for this column under the header
@@ -330,13 +324,18 @@ namespace XLSX_Merge
                         xlsxHeaderXPositionKvp[csvKvp.Key]
                     );
 
+                    // If the end cell has a lower row number, it means that there are no entries in this column underneath the header,
+                    // so the start cell is eqal to the end cell.
+                    if (removeRangeEndCell.Address.RowNumber < startCell.Address.RowNumber)
+                        removeRangeEndCell = startCell;
+
                     destinationWs.Range(startCell, removeRangeEndCell).Clear();
                     #endregion
 
 
                     #region Insert data
                     // Construct the vertical range that holds the csv data
-                    IXLRange dataRange = tempCsvWs.Range(1, csvKvp.Value, rangeLength + 1, csvKvp.Value);
+                    IXLRange dataRange = tempCsvWs.Range(2, csvKvp.Value, rangeLength + 1, csvKvp.Value);
 
                     // Insert the values
                     startCell.Value = dataRange;
@@ -348,6 +347,7 @@ namespace XLSX_Merge
 
             // Save workbook
             destinationWb.Save();
+            txtbxXlsx.Text = "Fertig" + DateTime.Now;
         }
 
 

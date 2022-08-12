@@ -1,5 +1,6 @@
 using ClosedXML.Excel;
 using Microsoft.VisualBasic.FileIO;
+using XLSX_Merge_Utils;
 
 namespace XLSX_Merge
 {
@@ -187,170 +188,17 @@ namespace XLSX_Merge
         /// <param name="sender"></param>
         /// <param name="e"></param>
         private void btnMergeFiles_Click(object sender, EventArgs e) {
-            #region CSV file import
-            // read csv into temporary worksheet
-            string filepath = "C:\\temp\\quelle.csv";
-            if (!File.Exists(filepath)) {
-                MessageBox.Show("Error: CSV file doesn't exist. Aborting operation.");
-                return;
-            }
-            
-            // Create temporary Excel workbook
-            XLWorkbook tempCsvWb = new XLWorkbook();
-            // Create temporary Excel sheet
-            IXLWorksheet tempCsvWs = tempCsvWb.AddWorksheet("csv-import");
-
-            // Import CSV data into worksheet
-            try {
-                csvToWorksheet(filepath, tempCsvWs);
-            } catch (Exception ex) {
-                MessageBox.Show("An error occured while importing the csv file. Error message:\r\n\r\n" + ex.Message);
-                return;
+            switch (cbMergeMethod.Text) {
+                case "Append":
+                    XlsxMergeUtils.mergeCSVintoXLSX(txtbxMergeHeader.Text, XlsxMergeUtils.MergeMethods.Append);
+                    break;
+                case "Replace":
+                    XlsxMergeUtils.mergeCSVintoXLSX(txtbxMergeHeader.Text, XlsxMergeUtils.MergeMethods.Replace);
+                    break;
+                default:
+                    break;
             }
 
-            // Create mapping of header name-string to column-number
-            Dictionary<string, int> csvHeaderXPositionKvp = new Dictionary<string, int>();
-            IXLRow firstRow = tempCsvWs.FirstRow();
-
-            foreach (var c in firstRow.CellsUsed())
-                csvHeaderXPositionKvp.Add(c.GetString(), c.Address.ColumnNumber);
-            #endregion
-
-
-            // open xlsx file, open workbook, open worksheet (maybe as a stream instead of a file)
-            // TODO: open as a stream
-            string filepathDest = "C:\\temp\\quelle.xlsx";
-            if (!File.Exists(filepathDest)) {
-                MessageBox.Show("Error: Excel file does not exist. Aborting operation.");
-                return;
-            }
-
-            IXLWorkbook destinationWb;
-            try {
-                destinationWb = new XLWorkbook(filepathDest);
-            } catch (System.IO.IOException ex) {
-                MessageBox.Show("Error: Opening the Excel file failed. Error message:\r\n\r\n" + ex.Message);
-                return;
-            }
-            IXLWorksheet destinationWs = destinationWb.Worksheet(1);
-
-            // The number of the row in which the headers are contained in the existing Excel file
-            int? destHeaderRowNr = null;
-
-            // sort the .csv header row for a List comparison with the .xlsx rows
-            List<string> csvHeaderList = new();
-            foreach (IXLCell c in firstRow.CellsUsed().ToList())
-                csvHeaderList.Add(c.GetString());
-
-            foreach (IXLRow r in destinationWs.RowsUsed())
-            {
-                // Get all cell values in a List and sort them
-                List<string> destRowList = new();
-                foreach (IXLCell c in r.CellsUsed().ToList())
-                    destRowList.Add(c.GetString());
-
-                // compare the .xlsx row with the .csv header row
-                bool headerFoundInRow = true;
-                foreach (string s in csvHeaderList)
-                    if (!destRowList.Contains(s))
-                        headerFoundInRow = false;
-                if (!headerFoundInRow)
-                    continue;
-                
-                destHeaderRowNr = r.RowNumber();
-
-                break;
-            }
-
-            
-
-            // Abort if no fitting row was found
-            if (destHeaderRowNr is null) {
-                MessageBox.Show("Error: Corresponding column headers of the CSV file not found in Excel file or the column headers are placed in different rows. Aborting operation.");
-                return;
-            }
-
-            // A dict with the headers name string  paired with its column number
-            Dictionary<string,int> xlsxHeaderXPositionKvp = new();
-
-            IXLRow destinationRow = destinationWs.Row((int)destHeaderRowNr);
-            // For each header in our CSVs header dictionary ...
-            foreach (string s in csvHeaderXPositionKvp.Keys) {
-                IXLCells c = destinationRow.Search(s); // ... search the row for cells containing the header
-                xlsxHeaderXPositionKvp.Add(s, c.First().Address.ColumnNumber);   // ... and add the first found cell's column number as value to the dict
-            }
-
-            string indexHeader = txtbxMergeHeader.Text;
-            int indexHeaderNr = csvHeaderXPositionKvp[indexHeader];
-
-            // Check for merging method
-            if (cbMergeMethod.Text.Equals("Append"))
-            {
-                // Check for last used cell in the indexHeader column and increase its row number 1 to get the next free cell
-                int startrowOfRangeInsert = destinationWs.Column(xlsxHeaderXPositionKvp[indexHeader]).LastCellUsed().Address.RowNumber + 1;
-
-                /* Get the number of entries in the csv header column by
-                 * subtracting 1 off of the last used cell's row number. In
-                 * case of an empty cell in the indexheader column in between
-                 * the function counts adds the row to the range length as long
-                 * as somewhere further down is a cell with a value. */
-                int rangeLength = tempCsvWs.Column(indexHeaderNr).LastCellUsed().Address.RowNumber - 1;
-
-                // Insert the csv's data vertically at the first free row in its respective column under the header
-                foreach (KeyValuePair<string, int> csvKvp in csvHeaderXPositionKvp)
-                {
-                    IXLCell startCell = destinationWs.Cell(startrowOfRangeInsert, xlsxHeaderXPositionKvp[csvKvp.Key]);
-
-                    // Construct the vertical range that holds the csv data
-                    IXLRange dataRange = tempCsvWs.Range(2, csvKvp.Value, rangeLength + 1, csvKvp.Value);
-
-                    // Insert the values
-                    startCell.Value = dataRange;
-                }
-            } else if (cbMergeMethod.Text.Equals("Replace")) {
-                // The insert range starts just below the header row
-                int startrowOfRangeInsert = (int)destHeaderRowNr + 1;
-
-                // Get the number of entries in the csv
-                int rangeLength = tempCsvWs.Column(indexHeaderNr).CellsUsed().Count() - 1;
-
-                /* Insert the csv's data vertically at the first free row in 
-                 * its respective column under the header and delete all 
-                 * other entries for this column under the header. */
-                foreach (KeyValuePair<string, int> csvKvp in csvHeaderXPositionKvp)
-                {
-                    IXLCell startCell = destinationWs.Cell(startrowOfRangeInsert, xlsxHeaderXPositionKvp[csvKvp.Key]);
-
-                    #region Clean entries before inserting the new data
-                    IXLCell removeRangeEndCell = destinationWs.Cell(
-                        destinationWs.Column(xlsxHeaderXPositionKvp[csvKvp.Key]).LastCellUsed().Address.RowNumber,
-                        xlsxHeaderXPositionKvp[csvKvp.Key]
-                    );
-
-                    // If the end cell has a lower row number, it means that there are no entries in this column underneath the header,
-                    // so the start cell is equal to the end cell.
-                    if (removeRangeEndCell.Address.RowNumber < startCell.Address.RowNumber)
-                        removeRangeEndCell = startCell;
-
-                    destinationWs.Range(startCell, removeRangeEndCell).Clear();
-                    #endregion
-
-
-                    #region Insert data
-                    // Construct the vertical range that holds the csv data
-                    IXLRange dataRange = tempCsvWs.Range(2, csvKvp.Value, rangeLength + 1, csvKvp.Value);
-
-                    // Insert the values
-                    startCell.Value = dataRange;
-                    #endregion
-                }
-            } else {
-                MessageBox.Show("Neither \"Append\" nor \"Replace\" was given as the merge method. Aborting operation.");
-                return; // Abort execution
-            }
-
-            // Save workbook
-            destinationWb.Save();
             txtbxXlsx.Text = "Fertig" + DateTime.Now;
         }
 
@@ -364,50 +212,6 @@ namespace XLSX_Merge
         private void lblMergeDataHeader_Click(object sender, EventArgs e)
         {
 
-        }
-        #endregion
-
-        #region Utility Funktionen und noch auszulagernde Funktionen
-        ///////////////////////////////////////////////////////////////////////
-        /// NOCH AUSLAGERN IN ANDERE DATEI ///
-        ///////////////////////////////////////////////////////////////////////
-
-        private static void csvToWorksheet(string filepath, IXLWorksheet newSheet)
-        {
-            using (TextFieldParser parser = new(filepath))
-            {
-                // Tell parser that the text is delimited with a semicolon
-                parser.TextFieldType = FieldType.Delimited;
-                parser.SetDelimiters(";");
-
-                // Rows a counted from 1 instead of 0, that means:
-                // row == arrayindex + 1
-                int lineNumber = 1;
-
-                while (!parser.EndOfData)
-                {
-                    // Read the next line of the csv file
-                    string? line = parser.ReadLine();
-                    if (line == null) { break; }
-                    else
-                    {
-                        // Split current line by its delimiter
-                        string[] splittedValues = line.Split(";");
-                        // The number of substrings equals the number of columns
-                        int numberOfColumns = splittedValues.Length;
-
-                        // Go through each column in the current row (line) and set the cells value
-                        for (int i = 0; i < numberOfColumns; i++)
-                        {
-                            int row = lineNumber;
-                            int column = i + 1;
-
-                            newSheet.Cell(row, column).SetValue(splittedValues[i]);
-                        }
-                    }
-                    lineNumber++;
-                }
-            }
         }
         #endregion
     }

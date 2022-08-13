@@ -1,4 +1,5 @@
 ﻿using ClosedXML.Excel;
+using Microsoft.VisualBasic.FileIO;
 
 namespace XLSX_Merge_Utils {
     public class XlsxMergeUtils {
@@ -8,60 +9,66 @@ namespace XLSX_Merge_Utils {
             Replace
         }
 
+        private static Dictionary<string,int> mapHeaderToColumnNr(IXLRow headerRow) {
+            Dictionary<string, int> csvHeaderXPositionKvp = new Dictionary<string, int>();
+
+            foreach (var c in headerRow.CellsUsed())
+                csvHeaderXPositionKvp.Add(c.GetString(), c.Address.ColumnNumber);
+
+            return csvHeaderXPositionKvp;
+        }
+
+        private static XLWorkbook openXlsxFile(string xlsxFilepath, FileStream? xlsxFS) {
+            // open xlsx file, open workbook, open worksheet (maybe as a stream instead of a file)
+            // TODO: open as a stream
+
+            XLWorkbook destinationWb;
+
+            try {
+                //destinationWb = new XLWorkbook(filepathDest);
+                xlsxFS = new FileStream(xlsxFilepath, FileMode.Open, FileAccess.ReadWrite);
+                destinationWb = new XLWorkbook(xlsxFS);
+            } catch (FileNotFoundException ex) {
+                if (xlsxFS != null)
+                    xlsxFS.Close();
+
+                Console.WriteLine("Error: Excel file does not exist. Aborting operation.");
+                throw;
+            } catch (Exception ex) {
+                if (xlsxFS != null)
+                    xlsxFS.Close();
+
+                Console.WriteLine("Error: Opening the Excel file failed. Error message:\r\n\r\n" + ex.Message);
+                throw;
+            }
+            return destinationWb;
+        }
+
         /// <summary>
         /// Merges a .csv file into a .xlsx file. A unique key to the table, existing only once globally.
         /// </summary>
         /// <param name="indexHeader">The index, the point of orientation when deciding where and how much to insert.</param>
-        public static void mergeCSVintoXLSX(string indexHeader, MergeMethods mergeMethod) {
+        public static void mergeCSVintoXLSX(string csvFilePath, string xlsxFilePath, string indexHeader, MergeMethods mergeMethod) {
             #region CSV file import
             // read csv into temporary worksheet
-            string filepath = "C:\\temp\\quelle.csv";
-            if (!File.Exists(filepath)) {
-                MessageBox.Show("Error: CSV file doesn't exist. Aborting operation.");
-                return;
-            }
 
             // Create temporary Excel workbook
             XLWorkbook tempCsvWb = new XLWorkbook();
 
             // Create temporary Excel sheet
             IXLWorksheet tempCsvWs = tempCsvWb.AddWorksheet("csv-import");
+            
+            csvToWorksheet(csvFilePath, tempCsvWs);
 
-            // Import CSV data into worksheet
-            try {
-                csvToWorksheet(filepath, tempCsvWs);
-            } catch (Exception ex) {
-                MessageBox.Show("An error occured while importing the csv file. Error message:\r\n\r\n" + ex.Message);
-                return;
-            }
+            #endregion
 
-            // Create mapping of header name-string to column-number
-            Dictionary<string, int> csvHeaderXPositionKvp = new Dictionary<string, int>();
-            IXLRow firstRow = tempCsvWs.FirstRow();
-
-            foreach (var c in firstRow.CellsUsed())
-                csvHeaderXPositionKvp.Add(c.GetString(), c.Address.ColumnNumber);
+            #region  Create mapping of header name-string to column-number
+            Dictionary<string,int> csvHeaderXPositionKvp = mapHeaderToColumnNr(tempCsvWs.FirstRow());
             #endregion
 
             #region Open .xlsx file
-            // open xlsx file, open workbook, open worksheet (maybe as a stream instead of a file)
-            // TODO: open as a stream
-            string filepathDest = "C:\\temp\\quelle.xlsx";
-            if (!File.Exists(filepathDest)) {
-                MessageBox.Show("Error: Excel file does not exist. Aborting operation.");
-                return;
-            }
-
-            IXLWorkbook destinationWb;
-            FileStream xlsxFS;
-            try {
-                destinationWb = new XLWorkbook(filepathDest);
-                //xlsxFS = new FileStream(filepathDest, FileMode.Open, FileAccess.ReadWrite);
-                //destinationWb = new XLWorkbook(xlsxFS);
-            } catch (Exception ex) {
-                MessageBox.Show("Error: Opening the Excel file failed. Error message:\r\n\r\n" + ex.Message);
-                return;
-            }
+            FileStream? xlsxFS = null;
+            IXLWorkbook destinationWb = openXlsxFile(xlsxFilePath, xlsxFS);
             #endregion
 
             // TODO: Make the sheet number variable
@@ -71,7 +78,7 @@ namespace XLSX_Merge_Utils {
             // Get the .csv data headers for comparison with the .xlsx headers
             #region Convert .csv header row to a List of strings
             List<string> csvHeaderList = new();
-            foreach (IXLCell c in firstRow.CellsUsed().ToList())
+            foreach (IXLCell c in tempCsvWs.FirstRow().CellsUsed().ToList())
                 csvHeaderList.Add(c.GetString());
             #endregion
             // The number of the row in which the headers are contained in the existing Excel file
@@ -200,6 +207,10 @@ namespace XLSX_Merge_Utils {
             #region Save changes to Excel file
             // Save workbook
             destinationWb.Save();
+            if (xlsxFS != null) {
+                xlsxFS.Flush();
+                xlsxFS.Close();
+            }
             #endregion
         }
 
@@ -209,35 +220,42 @@ namespace XLSX_Merge_Utils {
 
         #region Utility Funktionen
 
-        private static void csvToWorksheet(string filepath, IXLWorksheet newSheet) {
-            using (TextFieldParser parser = new(filepath)) {
-                // Tell parser that the text is delimited with a semicolon
-                parser.TextFieldType = FieldType.Delimited;
-                parser.SetDelimiters(";");
+        public static void csvToWorksheet(string filepath, IXLWorksheet newSheet) {
+            try {
+                using (TextFieldParser parser = new(filepath)) {
+                    // Tell parser that the text is delimited with a semicolon
+                    parser.TextFieldType = FieldType.Delimited;
+                    parser.SetDelimiters(";");
 
-                // Rows a counted from 1 instead of 0, that means:
-                // row == arrayindex + 1
-                int lineNumber = 1;
+                    // Rows are counted from 1 instead of 0, that means:
+                    // row == arrayindex + 1
+                    int lineNumber = 1;
 
-                while (!parser.EndOfData) {
-                    // Read the next line of the csv file
-                    string? line = parser.ReadLine();
-                    if (line == null) { break; } else {
-                        // Split current line by its delimiter
-                        string[] splittedValues = line.Split(";");
-                        // The number of substrings equals the number of columns
-                        int numberOfColumns = splittedValues.Length;
+                    while (!parser.EndOfData) {
+                        // Read the next line of the csv file
+                        string? line = parser.ReadLine();
+                        if (line == null) { break; } else {
+                            // Split current line by its delimiter
+                            string[] splittedValues = line.Split(";");
+                            // The number of substrings equals the number of columns
+                            int numberOfColumns = splittedValues.Length;
 
-                        // Go through each column in the current row (line) and set the cells value
-                        for (int i = 0; i < numberOfColumns; i++) {
-                            int row = lineNumber;
-                            int column = i + 1;
+                            // Go through each column in the current row (line) and set the cells value
+                            for (int i = 0; i < numberOfColumns; i++) {
+                                int row = lineNumber;
+                                int column = i + 1;
 
-                            newSheet.Cell(row, column).SetValue(splittedValues[i]);
+                                newSheet.Cell(row, column).SetValue(splittedValues[i]);
+                            }
                         }
+                        lineNumber++;
                     }
-                    lineNumber++;
                 }
+            } catch (FileNotFoundException ex) {
+                Console.WriteLine("Error: CSV file doesn't exist. Aborting operation.");
+                throw;
+            } catch {
+                throw;
             }
         }
 

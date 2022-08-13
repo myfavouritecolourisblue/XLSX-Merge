@@ -167,8 +167,7 @@ namespace XLSX_Merge
             XLWorkbook newFile = new XLWorkbook();
             // Create new Excel sheet
             IXLWorksheet newSheet = newFile.AddWorksheet("Tabelle123");
-
-            csvToWorksheet(filepath, newSheet);
+            XlsxMergeUtils.csvToWorksheet(filepath, newSheet);
 
             newFile.SaveAs("C:\\temp\\neu_" + DateTime.Now.Ticks + ".xlsx");
         }
@@ -188,12 +187,15 @@ namespace XLSX_Merge
         /// <param name="sender"></param>
         /// <param name="e"></param>
         private void btnMergeFiles_Click(object sender, EventArgs e) {
+            string csvFilePath = "C:\\temp\\quelle.csv";
+            string xlsxFilePath = "C:\\temp\\quelle.xlsx";
+
             switch (cbMergeMethod.Text) {
                 case "Append":
-                    XlsxMergeUtils.mergeCSVintoXLSX(txtbxMergeHeader.Text, XlsxMergeUtils.MergeMethods.Append);
+                    XlsxMergeUtils.mergeCSVintoXLSX(csvFilePath, xlsxFilePath, txtbxMergeHeader.Text, XlsxMergeUtils.MergeMethods.Append);
                     break;
                 case "Replace":
-                    XlsxMergeUtils.mergeCSVintoXLSX(txtbxMergeHeader.Text, XlsxMergeUtils.MergeMethods.Replace);
+                    XlsxMergeUtils.mergeCSVintoXLSX(csvFilePath, xlsxFilePath, txtbxMergeHeader.Text, XlsxMergeUtils.MergeMethods.Replace);
                     break;
                 default:
                     break;

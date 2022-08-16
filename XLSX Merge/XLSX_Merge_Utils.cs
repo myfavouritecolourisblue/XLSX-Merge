@@ -59,15 +59,14 @@ namespace XLSX_Merge_Utils {
             #region Open .xlsx file
             //XLWorkbook destinationWb = openXlsxFile(xlsxFilePath);
             using (var fs = new FileStream(xlsxFilePath, FileMode.Open, FileAccess.ReadWrite)) {
-                Console.WriteLine("abc");
                 XLWorkbook destinationWb = new XLWorkbook(fs);
                 #endregion
-                Console.WriteLine("abc");
+
                 #region Open first worksheet of the .xlsx file
                 // TODO: Make the sheet number variable
                 IXLWorksheet destinationWs = destinationWb.Worksheet(1);
                 #endregion
-                Console.WriteLine("abc");
+
                 #region Search for the row in which the data headers are located and get its row number
                 // Get the .csv data headers for comparison with the .xlsx headers
                 #region Convert .csv header row to a List of strings
@@ -79,13 +78,14 @@ namespace XLSX_Merge_Utils {
 
                 // The number of the row in which the headers are contained in the existing Excel file
                 int? destHeaderRowNr = null;
-
+                
                 foreach (IXLRow r in destinationWs.RowsUsed()) {
                     #region Convert .xlsx header row to a List of strings
                     // Get all cell values as strings in a List
-                    List<string> destRowList = new();
-                    foreach (IXLCell c in r.CellsUsed().ToList())
-                        destRowList.Add(c.GetString());
+                    //List<string> destRowList = new();
+                    //foreach (IXLCell c in r.CellsUsed().ToList())
+                    //    destRowList.Add(c.GetString());
+                    List<string> destRowList = new(r.CellsUsed().ToList().Select(c => c.GetString()));
                     #endregion
                     #region Compare both header rows
                     // compare the .xlsx row with the .csv header row
@@ -93,9 +93,10 @@ namespace XLSX_Merge_Utils {
                     foreach (string s in csvHeaderList)
                         if (!destRowList.Contains(s))
                             headerFoundInRow = false;
-                    #endregion
+                    
                     if (!headerFoundInRow)
                         continue;
+                    #endregion
 
                     destHeaderRowNr = r.RowNumber();
                     break;
@@ -109,6 +110,7 @@ namespace XLSX_Merge_Utils {
 
                 #endregion
 
+                // TODO hier weiter refactorieren
                 #region Build a dict with the .xlsx headers paired with its respective column numbers
                 // A dict with the headers name string paired with its column number
                 Dictionary<string, int> xlsxHeaderXPositionKvp = new();

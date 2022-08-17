@@ -39,6 +39,21 @@ namespace XLSX_Merge_Utils {
         /// </summary>
         /// <param name="indexHeader">The index, the point of orientation when deciding where and how much to insert.</param>
         public static void mergeCSVintoXLSX(string csvFilePath, string xlsxFilePath, string indexHeader, MergeMethods mergeMethod) {
+            #region Check for empty parameters
+            if(string.IsNullOrEmpty(csvFilePath) || string.IsNullOrWhiteSpace(csvFilePath)) {
+                MessageBox.Show("Merge header not given. Aborting operation.");
+                return;
+            }
+            if (string.IsNullOrEmpty(xlsxFilePath) || string.IsNullOrWhiteSpace(xlsxFilePath)) {
+                MessageBox.Show("Merge header not given. Aborting operation.");
+                return;
+            }
+            if (string.IsNullOrEmpty(indexHeader) || string.IsNullOrWhiteSpace(indexHeader)) {
+                MessageBox.Show("Merge header not given. Aborting operation.");
+                return;
+            }
+            #endregion
+
             #region CSV file import
             // read csv into temporary worksheet
 
@@ -56,6 +71,13 @@ namespace XLSX_Merge_Utils {
             Dictionary<string, int> csvHeaderXPositionKvp = mapHeaderToColumnNr(tempCsvWs.FirstRow());
             #endregion
 
+            #region Check if user given indexHeader is existant in the csv file
+            if (!csvHeaderXPositionKvp.ContainsKey(indexHeader)) {
+                MessageBox.Show("Merge header not found in .csv file. Aborting operation.");
+                return;
+            }
+            #endregion
+
             #region Open .xlsx file
             //XLWorkbook destinationWb = openXlsxFile(xlsxFilePath);
             using (var fs = new FileStream(xlsxFilePath, FileMode.Open, FileAccess.ReadWrite)) {
@@ -67,7 +89,6 @@ namespace XLSX_Merge_Utils {
                 IXLWorksheet destinationWs = destinationWb.Worksheet(1);
                 #endregion
 
-                #region Search for the row in which the data headers are located and get its row number
                 // Get the .csv data headers for comparison with the .xlsx headers
                 #region Convert .csv header row to a List of strings
                 /*List<string> csvHeaderList = new();
@@ -78,7 +99,8 @@ namespace XLSX_Merge_Utils {
 
                 // The number of the row in which the headers are contained in the existing Excel file
                 int? destHeaderRowNr = null;
-                
+
+                #region Convert .xlsx rows in a list and search the first one containing all the csvHeaderList members (e.g. all the .csv column headers)
                 foreach (IXLRow r in destinationWs.RowsUsed()) {
                     #region Convert .xlsx header row to a List of strings
                     // Get all cell values as strings in a List
@@ -110,7 +132,6 @@ namespace XLSX_Merge_Utils {
 
                 #endregion
 
-                // TODO hier weiter refactorieren
                 #region Build a dict with the .xlsx headers paired with its respective column numbers
                 // A dict with the headers name string paired with its column number
                 Dictionary<string, int> xlsxHeaderXPositionKvp = new();
@@ -118,21 +139,26 @@ namespace XLSX_Merge_Utils {
                 IXLRow destinationRow = destinationWs.Row((int)destHeaderRowNr);
                 // For each header in our CSVs header dictionary ...
                 foreach (string s in csvHeaderXPositionKvp.Keys) {
-                    IXLCells c = destinationRow.Search(s); // ... search the row for cells containing the header
-                    xlsxHeaderXPositionKvp.Add(s, c.First().Address.ColumnNumber);   // ... and add the first found cell's column number as value to the dict
+                    xlsxHeaderXPositionKvp.Add(s, destinationRow.Search(s).First().Address.ColumnNumber);// ... search the row for cells containing the header and add the first found cell's column number as value to the dict
+                    //IXLCells c = destinationRow.Search(s); // ... search the row for cells containing the header
+                    //xlsxHeaderXPositionKvp.Add(s, c.First().Address.ColumnNumber);   // ... and add the first found cell's column number as value to the dict
                 }
                 #endregion
 
-                #region Determination the index header's column number in the .csv file
-                if (string.IsNullOrEmpty(indexHeader)) {
-                    MessageBox.Show("Merge header not given. Aborting operation.");
+                #region Check if user given indexHeader is existant in the csv file
+                if (!xlsxHeaderXPositionKvp.ContainsKey(indexHeader)) {
+                    MessageBox.Show("Merge header not found in .xlsx file. Aborting operation.");
                     return;
                 }
+                #endregion
+
+                #region Determination of the index header's column number in the .csv file
                 int indexHeaderNr = csvHeaderXPositionKvp[indexHeader];
                 #endregion
 
+                // TODO hier weiter refactorieren
                 #region Perform the actual merge
-                #region Merge by appending
+                    #region Merge by appending
                 // Check for merging method
                 if (mergeMethod.Equals(MergeMethods.Append)) {
                     // Check for last used cell in the indexHeader column and increase its row number 1 to get the next free cell
@@ -143,14 +169,21 @@ namespace XLSX_Merge_Utils {
                      * case of an empty cell in the indexheader column in between
                      * the function counts adds the row to the range length as long
                      * as somewhere further down is a cell with a value. */
-                    int rangeLength = tempCsvWs.Column(indexHeaderNr).LastCellUsed().Address.RowNumber - 1;
+                    int dataRangeFirstRow = 2; // 2 == Row number 1 is the header row, in row number two the first data entries begin.
+                    int dataRangeLastRow = tempCsvWs.Column(indexHeaderNr).LastCellUsed().Address.RowNumber;
+                    
+                    // If the last row number is less than the first row number then there are no entries in the index header column.
+                    if (dataRangeLastRow < dataRangeFirstRow) {
+                        MessageBox.Show("No entries in merge header column found. Aborting operation.");
+                        return;
+                    }
 
                     // Insert the csv's data vertically at the first free row in its respective column under the header
                     foreach (KeyValuePair<string, int> csvKvp in csvHeaderXPositionKvp) {
                         IXLCell startCell = destinationWs.Cell(startrowOfRangeInsert, xlsxHeaderXPositionKvp[csvKvp.Key]);
-
+                        
                         // Construct the vertical range that holds the csv data
-                        IXLRange dataRange = tempCsvWs.Range(2, csvKvp.Value, rangeLength + 1, csvKvp.Value);
+                        IXLRange dataRange = tempCsvWs.Range(dataRangeFirstRow, csvKvp.Value, dataRangeLastRow, csvKvp.Value);
 
                         // Insert the values
                         startCell.Value = dataRange;
@@ -159,10 +192,18 @@ namespace XLSX_Merge_Utils {
                     #region Merge by replacing
                 } else if (mergeMethod == MergeMethods.Replace) {
                     // The insert range starts just below the header row
-                    int startrowOfRangeInsert = (int)destHeaderRowNr + 1;
+                    int startrowOfRangeInsert = (int)destHeaderRowNr;
 
+                    // TODO: hier geht irgendwas schief, sodass die erste Zeile (die header zeile) immer als Startreihe gilt
                     // Get the number of entries in the csv
-                    int rangeLength = tempCsvWs.Column(indexHeaderNr).CellsUsed().Count() - 1;
+                    int dataRangeFirstRow = 2;
+                    int dataRangeLastRow = tempCsvWs.Column(indexHeaderNr).CellsUsed().Count();
+
+                    // If the last row number is less than the first row number then there are no entries in the index header column.
+                    if (dataRangeLastRow < dataRangeFirstRow) {
+                        MessageBox.Show("No entries in merge header column found. Aborting operation.");
+                        return;
+                    }
 
                     /* Insert the csv's data vertically at the first free row in 
                      * its respective column under the header and delete all 
@@ -187,7 +228,7 @@ namespace XLSX_Merge_Utils {
 
                         #region Insert data
                         // Construct the vertical range that holds the csv data
-                        IXLRange dataRange = tempCsvWs.Range(2, csvKvp.Value, rangeLength + 1, csvKvp.Value);
+                        IXLRange dataRange = tempCsvWs.Range(dataRangeFirstRow, csvKvp.Value, dataRangeLastRow, csvKvp.Value);
 
                         // Insert the values
                         startCell.Value = dataRange;

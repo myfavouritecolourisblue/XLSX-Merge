@@ -192,9 +192,8 @@ namespace XLSX_Merge_Utils {
                     #region Merge by replacing
                 } else if (mergeMethod == MergeMethods.Replace) {
                     // The insert range starts just below the header row
-                    int startrowOfRangeInsert = (int)destHeaderRowNr;
+                    int startrowOfRangeInsert = (int)destHeaderRowNr + 1;
 
-                    // TODO: hier geht irgendwas schief, sodass die erste Zeile (die header zeile) immer als Startreihe gilt
                     // Get the number of entries in the csv
                     int dataRangeFirstRow = 2;
                     int dataRangeLastRow = tempCsvWs.Column(indexHeaderNr).CellsUsed().Count();

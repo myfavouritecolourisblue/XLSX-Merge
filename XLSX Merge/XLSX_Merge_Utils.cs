@@ -81,7 +81,13 @@ namespace XLSX_Merge_Utils {
             #region Open .xlsx file
             //XLWorkbook destinationWb = openXlsxFile(xlsxFilePath);
             using (var fs = new FileStream(xlsxFilePath, FileMode.Open, FileAccess.ReadWrite)) {
-                XLWorkbook destinationWb = new XLWorkbook(fs);
+                XLWorkbook destinationWb;
+                try {
+                    destinationWb = new XLWorkbook(fs);
+                } catch (Exception ex) {
+                    Console.WriteLine("Error: Opening the Excel file failed. Error message:\r\n\r\n" + ex.Message);
+                    throw;
+                }
                 #endregion
 
                 #region Open first worksheet of the .xlsx file

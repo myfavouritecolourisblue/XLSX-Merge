@@ -62,6 +62,9 @@
             this.txtbxMergeHeader = new System.Windows.Forms.TextBox();
             this.lblMergeMethod = new System.Windows.Forms.Label();
             this.cbMergeMethod = new System.Windows.Forms.ComboBox();
+            this.openFileDialog = new System.Windows.Forms.OpenFileDialog();
+            this.btnSelCsvFile = new System.Windows.Forms.Button();
+            this.btnSelXlsxFile = new System.Windows.Forms.Button();
             lblMergeDataHeader = new System.Windows.Forms.Label();
             this.panel1.SuspendLayout();
             this.SuspendLayout();
@@ -380,11 +383,39 @@
             this.cbMergeMethod.Size = new System.Drawing.Size(121, 23);
             this.cbMergeMethod.TabIndex = 28;
             // 
+            // openFileDialog
+            // 
+            this.openFileDialog.FileName = "source.xlsx";
+            this.openFileDialog.InitialDirectory = "C:\\Users\\temp\\";
+            this.openFileDialog.FileOk += new System.ComponentModel.CancelEventHandler(this.openFileDialog_FileOk);
+            // 
+            // btnSelCsvFile
+            // 
+            this.btnSelCsvFile.Location = new System.Drawing.Point(488, 331);
+            this.btnSelCsvFile.Name = "btnSelCsvFile";
+            this.btnSelCsvFile.Size = new System.Drawing.Size(146, 23);
+            this.btnSelCsvFile.TabIndex = 29;
+            this.btnSelCsvFile.Text = "Select .csv file";
+            this.btnSelCsvFile.UseVisualStyleBackColor = true;
+            this.btnSelCsvFile.Click += new System.EventHandler(this.btnSelCsvFile_Click);
+            // 
+            // btnSelXlsxFile
+            // 
+            this.btnSelXlsxFile.Location = new System.Drawing.Point(488, 360);
+            this.btnSelXlsxFile.Name = "btnSelXlsxFile";
+            this.btnSelXlsxFile.Size = new System.Drawing.Size(146, 23);
+            this.btnSelXlsxFile.TabIndex = 30;
+            this.btnSelXlsxFile.Text = "Select .xlsx file";
+            this.btnSelXlsxFile.UseVisualStyleBackColor = true;
+            this.btnSelXlsxFile.Click += new System.EventHandler(this.btnSelXlsxFile_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1094, 711);
+            this.Controls.Add(this.btnSelXlsxFile);
+            this.Controls.Add(this.btnSelCsvFile);
             this.Controls.Add(this.cbMergeMethod);
             this.Controls.Add(this.lblMergeMethod);
             this.Controls.Add(this.txtbxMergeHeader);
@@ -458,5 +489,8 @@
         private TextBox txtbxMergeHeader;
         private Label lblMergeMethod;
         private ComboBox cbMergeMethod;
+        private OpenFileDialog openFileDialog;
+        private Button btnSelCsvFile;
+        private Button btnSelXlsxFile;
     }
 }

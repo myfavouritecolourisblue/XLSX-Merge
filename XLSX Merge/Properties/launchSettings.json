@@ -1,0 +1,11 @@
+{
+  "profiles": {
+    "XLSX Merge": {
+      "commandName": "Project"
+    },
+    "noUI": {
+      "commandName": "Project",
+      "commandLineArgs": "--noui"
+    }
+  }
+}

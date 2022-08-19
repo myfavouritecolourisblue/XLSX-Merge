@@ -1,6 +1,8 @@
 using ClosedXML.Excel;
 using Microsoft.VisualBasic.FileIO;
+using System.Diagnostics;
 using XLSX_Merge_Utils;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.StartPanel;
 
 namespace XLSX_Merge
 {
@@ -25,8 +27,9 @@ namespace XLSX_Merge
          */
         private void btnReadXlsx_Click(object sender, EventArgs e)
         {
-            string filepath = "C:\\temp\\quelle.xlsx";
-
+            if (Environment.GetCommandLineArgs().Contains("--noui")) this.Hide();
+            /*string filepath = "C:\\temp\\quelle.xlsx";
+            
             // Load the Excel file into memory
             workbook = new XLWorkbook(filepath);
 
@@ -37,7 +40,7 @@ namespace XLSX_Merge
             worksheet = workbook.Worksheet(1);
 
             // Show the worksheet name to the user
-            txtbxWorksheet.Text = worksheet.ToString();
+            txtbxWorksheet.Text = worksheet.ToString();*/
         }
 
         /*
@@ -187,15 +190,12 @@ namespace XLSX_Merge
         /// <param name="sender"></param>
         /// <param name="e"></param>
         private void btnMergeFiles_Click(object sender, EventArgs e) {
-            string csvFilePath = "C:\\temp\\quelle.csv";
-            string xlsxFilePath = "C:\\temp\\quelle.xlsx";
-
             switch (cbMergeMethod.Text) {
                 case "Append":
-                    XlsxMergeUtils.mergeCSVintoXLSX(csvFilePath, xlsxFilePath, txtbxMergeHeader.Text, XlsxMergeUtils.MergeMethods.Append);
+                    XlsxMergeUtils.mergeCSVintoXLSX(txtbxCsvFile.Text, txtbxXlsxFile.Text, txtbxMergeHeader.Text, XlsxMergeUtils.MergeMethods.Append);
                     break;
                 case "Replace":
-                    XlsxMergeUtils.mergeCSVintoXLSX(csvFilePath, xlsxFilePath, txtbxMergeHeader.Text, XlsxMergeUtils.MergeMethods.Replace);
+                    XlsxMergeUtils.mergeCSVintoXLSX(txtbxCsvFile.Text, txtbxXlsxFile.Text, txtbxMergeHeader.Text, XlsxMergeUtils.MergeMethods.Replace);
                     break;
                 default:
                     break;
@@ -216,5 +216,27 @@ namespace XLSX_Merge
 
         }
         #endregion
+
+        private void openXlsxFileDialog_FileOk(object sender, System.ComponentModel.CancelEventArgs e) {
+        }
+
+        private void btnSelCsvFile_Click(object sender, EventArgs e) {
+            openFileDialog.InitialDirectory = "C:\\Users\\" + Environment.UserName + "\\Documents\\";
+            openFileDialog.Title = "Select .csv file";
+            openFileDialog.ShowDialog();
+            txtbxCsvFile.Text = openFileDialog.FileName;
+        }
+
+        private void btnSelXlsxFile_Click(object sender, EventArgs e) {
+            openFileDialog.InitialDirectory = "C:\\Users\\" + Environment.UserName + "\\Documents\\";
+            openFileDialog.Title = "Select .xlsx file";
+            openFileDialog.ShowDialog();
+            
+            txtbxXlsxFile.Text = openFileDialog.FileName;
+        }
+
+        private void openFileDialog_FileOk(object sender, System.ComponentModel.CancelEventArgs e) {
+
+        }
     }
 }
